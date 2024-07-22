@@ -14,6 +14,7 @@
   var defaults = {
     pageSelector: "main",
     headersSelector: "h1, h2, h3",
+    tocElement: "#toc",
   };
 
   /**
@@ -48,6 +49,48 @@
   }
 
   /**
+   * Create HTML element
+   * @param {string} type tag element
+   * @param {object} attributes element attributes
+   * @param {node} parent element parent
+   * @param {string} content element text content
+   * @returns {node} created element
+   */
+  function createElement(type, attributes, parent, content = "") {
+    let el = document.createElement(type);
+    for (let key in attributes) {
+      el.setAttribute(key, attributes[key]);
+    }
+
+    el.innerHTML = content;
+    parent.appendChild(el);
+    return el;
+  }
+
+  /**
+   * https://jasonwatmore.com/vanilla-js-slugify-a-string-in-javascript
+   * @param {string} input
+   * @returns {string} slugify input
+   */
+  function slufify(input) {
+    if (!input) return "";
+
+    // make lower case and trim
+    var slug = input.toLowerCase().trim();
+
+    // remove accents from charaters
+    slug = slug.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // replace invalid chars with spaces
+    slug = slug.replace(/[^a-z0-9\s-]/g, " ").trim();
+
+    // replace multiple spaces or hyphens with a single hyphen
+    slug = slug.replace(/[\s-]+/g, "-");
+
+    return slug;
+  }
+
+  /**
    * Les prototypes du plugin
    * @public
    * @constructor
@@ -56,39 +99,42 @@
     init: function () {
       this.PAGE = document.querySelector(this.options.pageSelector);
       this.HEADINGS = this.PAGE.querySelectorAll(this.options.headersSelector);
+      this.TOC_ELEMENT = document.querySelector(this.options.tocElement);
+
+      console.log(this.HEADINGS[0]);
 
       this.setHeadingsId();
+      this.generateTocHTML(this.HEADINGS);
     },
 
+    /**
+     * Set ID to headings
+     */
     setHeadingsId: function () {
       this.HEADINGS.forEach((heading) => {
-        let idContent = this.slufify(heading.textContent);
+        let idContent = slufify(heading.textContent);
 
         heading.setAttribute("id", idContent);
       });
     },
 
     /**
-     * https://jasonwatmore.com/vanilla-js-slugify-a-string-in-javascript
-     * @param {string} input
-     * @returns {string} slugify input
+     * Generate the table of contents based on the heading in the page
+     * @param {array} headings list of headings
      */
-    slufify: function (input) {
-      if (!input) return "";
-
-      // make lower case and trim
-      var slug = input.toLowerCase().trim();
-
-      // remove accents from charaters
-      slug = slug.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-      // replace invalid chars with spaces
-      slug = slug.replace(/[^a-z0-9\s-]/g, " ").trim();
-
-      // replace multiple spaces or hyphens with a single hyphen
-      slug = slug.replace(/[\s-]+/g, "-");
-
-      return slug;
+    generateTocHTML: function (headings) {
+      headings.forEach((heading) => {
+        const level = heading.tagName.toLowerCase();
+        createElement(
+          "a",
+          {
+            href: "/#" + slufify(heading.textContent),
+            class: "level-" + level,
+          },
+          this.TOC_ELEMENT,
+          heading.textContent
+        );
+      });
     },
   };
   return Plugin;
