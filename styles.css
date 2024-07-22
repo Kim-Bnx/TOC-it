@@ -1,0 +1,13 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: rgb(252, 247, 239);
+    color: rgb(38, 36, 48);
+}
+
+main {
+    width: 75%;
+    margin: 2rem auto;
+}

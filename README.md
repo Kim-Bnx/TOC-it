@@ -1,2 +1,3 @@
-# table-of-contents
-Table of contents generator
+# Table of contents generator
+
+A simple plugin to generate a table of contents of HTML page !
