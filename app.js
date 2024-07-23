@@ -93,6 +93,17 @@
   }
 
   /**
+   * Get the text content of an element and ignore its children
+   * @param {node} element
+   * @returns {string} text content of the element
+   */
+  function getTextElement(element) {
+    const childs = Array.from(element.childNodes);
+    const text = childs.find((child) => child.nodeName == "#text");
+    return text.nodeValue;
+  }
+
+  /**
    * Les prototypes du plugin
    * @public
    * @constructor
@@ -112,9 +123,22 @@
      */
     setHeadingsId: function () {
       this.HEADINGS.forEach((heading) => {
-        let idContent = slufify(heading.textContent);
-
+        const title = getTextElement(heading);
+        // Set the id attribute to the heading
+        let idContent = slufify(title);
         heading.setAttribute("id", idContent);
+
+        // Create a anchor for the heading
+        const anchor = createElement(
+          "a",
+          {
+            href: `#${idContent}`,
+            class: "heading-anchor",
+            "aria-label": `Link to the section : ${title}`,
+          },
+          heading,
+          "#"
+        );
       });
     },
 
@@ -123,17 +147,17 @@
      * @param {array} headings list of headings
      */
     generateTocHTML: function (headings) {
-      const list = createElement("ol", { className: "tocList" }, this.TOC_ELEMENT);
+      const list = createElement("ol", { class: "tocList" }, this.TOC_ELEMENT);
 
       let lastLi = null;
       let lastList = list;
       let currentLevel = 1;
 
-      for (let i = 0; i <= headings.length - 1; i++) {
+      this.HEADINGS.forEach((heading) => {
         // Heading level from its tag
-        const level = Number(headings[i].tagName.substr(1));
+        const level = Number(heading.tagName.substr(1));
         // Heading text
-        const title = headings[i].textContent;
+        const title = getTextElement(heading);
 
         // Create the list item
         const li = createElement("li", { class: "level-" + level });
@@ -142,7 +166,7 @@
 
         // Create a sub list if sub level
         if (level > currentLevel) {
-          const newList = createElement("ol", { className: "sub-tocList" }, lastLi);
+          const newList = createElement("ol", { class: "sub-tocList" }, lastLi);
           newList.appendChild(li);
           lastList = newList;
         }
@@ -164,7 +188,7 @@
 
         lastLi = li;
         currentLevel = level;
-      }
+      });
     },
   };
   return Plugin;
