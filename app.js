@@ -13,7 +13,7 @@
 
   var defaults = {
     pageSelector: "main",
-    headersSelector: "h1, h2, h3",
+    headersSelector: "h1, h2, h3, h4, h5, h6",
     tocElement: "#toc",
   };
 
@@ -63,7 +63,9 @@
     }
 
     el.innerHTML = content;
-    parent.appendChild(el);
+    if (parent) {
+      parent.appendChild(el);
+    }
     return el;
   }
 
@@ -101,8 +103,6 @@
       this.HEADINGS = this.PAGE.querySelectorAll(this.options.headersSelector);
       this.TOC_ELEMENT = document.querySelector(this.options.tocElement);
 
-      console.log(this.HEADINGS[0]);
-
       this.setHeadingsId();
       this.generateTocHTML(this.HEADINGS);
     },
@@ -123,18 +123,48 @@
      * @param {array} headings list of headings
      */
     generateTocHTML: function (headings) {
-      headings.forEach((heading) => {
-        const level = heading.tagName.toLowerCase();
-        createElement(
-          "a",
-          {
-            href: "/#" + slufify(heading.textContent),
-            class: "level-" + level,
-          },
-          this.TOC_ELEMENT,
-          heading.textContent
-        );
-      });
+      const list = createElement("ol", { className: "tocList" }, this.TOC_ELEMENT);
+
+      let lastLi = null;
+      let lastList = list;
+      let currentLevel = 1;
+
+      for (let i = 0; i <= headings.length - 1; i++) {
+        // Heading level from its tag
+        const level = Number(headings[i].tagName.substr(1));
+        // Heading text
+        const title = headings[i].textContent;
+
+        // Create the list item
+        const li = createElement("li", { class: "level-" + level });
+        // Create the link for the list item
+        const a = createElement("a", { href: "/#" + slufify(title) }, li, title);
+
+        // Create a sub list if sub level
+        if (level > currentLevel) {
+          const newList = createElement("ol", { className: "sub-tocList" }, lastLi);
+          newList.appendChild(li);
+          lastList = newList;
+        }
+        // Continue previous list
+        else if (level < currentLevel) {
+          let currentList = lastList;
+
+          while (level < currentLevel) {
+            currentList = currentList.parentNode.closest("ol");
+            currentLevel--;
+          }
+          currentList.appendChild(li);
+          lastList = currentList;
+        }
+        // If same level, append in the current list
+        else {
+          lastList.appendChild(li);
+        }
+
+        lastLi = li;
+        currentLevel = level;
+      }
     },
   };
   return Plugin;
