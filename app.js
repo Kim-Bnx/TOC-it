@@ -50,13 +50,14 @@
 
   /**
    * Create HTML element
-   * @param {string} type tag element
-   * @param {object} attributes element attributes
-   * @param {node} parent element parent
-   * @param {string} content element text content
+   * @typedef {Object} ElementProperties
+   * @property {string} type tag element
+   * @property {object} attributes element attributes
+   * @property {node} parent element parent
+   * @property {string} content element text content
    * @returns {node} created element
    */
-  function createElement(type, attributes, parent, content = "") {
+  function createElement({ type, attributes, parent, content = "" }) {
     let el = document.createElement(type);
     for (let key in attributes) {
       el.setAttribute(key, attributes[key]);
@@ -114,14 +115,14 @@
       this.HEADINGS = this.PAGE.querySelectorAll(this.options.headersSelector);
       this.TOC_ELEMENT = document.querySelector(this.options.tocElement);
 
-      this.setHeadingsId();
+      this.setHeadingsAnchor();
       this.generateTocHTML(this.HEADINGS);
     },
 
     /**
-     * Set ID to headings
+     * Set ID and a link anchor to each headings
      */
-    setHeadingsId: function () {
+    setHeadingsAnchor: function () {
       this.HEADINGS.forEach((heading) => {
         const title = getTextElement(heading);
         // Set the id attribute to the heading
@@ -129,16 +130,17 @@
         heading.setAttribute("id", idContent);
 
         // Create a anchor for the heading
-        const anchor = createElement(
-          "a",
-          {
+        const anchor = createElement({
+          type: "a",
+          attributes: {
             href: `#${idContent}`,
             class: "heading-anchor",
+            title: `Link to the section : ${title}`,
             "aria-label": `Link to the section : ${title}`,
           },
-          heading,
-          "#"
-        );
+          parent: heading,
+          content: "#",
+        });
       });
     },
 
@@ -147,11 +149,16 @@
      * @param {array} headings list of headings
      */
     generateTocHTML: function (headings) {
-      const list = createElement("ol", { class: "tocList" }, this.TOC_ELEMENT);
+      let currentLevel = 1;
+
+      const list = createElement({
+        type: "ol",
+        attributes: { class: `toc__list` },
+        parent: this.TOC_ELEMENT,
+      });
 
       let lastLi = null;
       let lastList = list;
-      let currentLevel = 1;
 
       this.HEADINGS.forEach((heading) => {
         // Heading level from its tag
@@ -160,13 +167,35 @@
         const title = getTextElement(heading);
 
         // Create the list item
-        const li = createElement("li", { class: "level-" + level });
+        const li = createElement({
+          type: "li",
+          attributes: {
+            class: `toc__list-section`,
+            "data-section": level,
+          },
+        });
+
         // Create the link for the list item
-        const a = createElement("a", { href: "/#" + slufify(title) }, li, title);
+        const a = createElement({
+          type: "a",
+          attributes: {
+            href: "/#" + slufify(title),
+            class: "toc-link",
+            title: `Go to section : ${title}`,
+            "aria-label": `Go to section : ${title}`,
+          },
+          parent: li,
+          content: title,
+        });
 
         // Create a sub list if sub level
         if (level > currentLevel) {
-          const newList = createElement("ol", { class: "sub-tocList" }, lastLi);
+          const newList = createElement({
+            type: "ol",
+            attributes: { class: `toc__subList` },
+            parent: lastLi,
+          });
+
           newList.appendChild(li);
           lastList = newList;
         }
