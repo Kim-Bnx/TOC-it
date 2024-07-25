@@ -75,7 +75,7 @@
    * @param {string} input
    * @returns {string} slugify input
    */
-  function slufify(input) {
+  function slugify(input) {
     if (!input) return "";
 
     // make lower case and trim
@@ -126,7 +126,7 @@
       this.HEADINGS.forEach((heading) => {
         const title = getTextElement(heading);
         // Set the id attribute to the heading
-        let idContent = slufify(title);
+        let idContent = slugify(title);
         heading.setAttribute("id", idContent);
 
         // Create a anchor for the heading
@@ -179,7 +179,7 @@
         const a = createElement({
           type: "a",
           attributes: {
-            href: "/#" + slufify(title),
+            href: "/#" + slugify(title),
             class: "toc-link",
             title: `Go to section : ${title}`,
             "aria-label": `Go to section : ${title}`,
