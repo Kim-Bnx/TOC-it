@@ -115,8 +115,53 @@
       this.HEADINGS = this.PAGE.querySelectorAll(this.options.headersSelector);
       this.TOC_ELEMENT = document.querySelector(this.options.tocElement);
 
+      // Set the TOC
       this.setHeadingsAnchor();
       this.generateTocHTML(this.HEADINGS);
+
+      this.TOC_LINKS = this.TOC_ELEMENT.querySelectorAll(".toc-link");
+
+      // Headings observer
+      this.headingsObserver();
+    },
+
+    /**
+     * Make a reactive TOC with observer API
+     */
+    headingsObserver: function () {
+      // Observer actions
+      const handleObserver = (entries) => {
+        entries.forEach((entry) => {
+          // Select the toc's link of the entry witch matching id
+          const link = document.querySelector(`a[href="#${entry.target.id}"]`);
+
+          // Add class when entry is visible in the viewport
+          if (entry.isIntersecting) {
+            link.classList.add("is-visible");
+          } else {
+            link.classList.remove("is-visible");
+            link.classList.remove("is-active");
+          }
+        });
+
+        // Set a active class to the first visible link
+        const visibleLinks = document.querySelectorAll(".is-visible");
+        visibleLinks.forEach((link) => link.classList.remove("is-active"));
+        if (visibleLinks.length > 0) {
+          visibleLinks[0].classList.add("is-active");
+        }
+      };
+
+      const options = {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.5,
+      };
+
+      const observer = new IntersectionObserver(handleObserver, options);
+
+      // Observer on each headings
+      this.HEADINGS.forEach((heading) => observer.observe(heading));
     },
 
     /**
@@ -179,7 +224,7 @@
         const a = createElement({
           type: "a",
           attributes: {
-            href: "/#" + slugify(title),
+            href: "#" + slugify(title),
             class: "toc-link",
             title: `Go to section : ${title}`,
             "aria-label": `Go to section : ${title}`,
