@@ -1,5 +1,5 @@
 (function (root, factory) {
-  var pluginName = "toc";
+  var pluginName = "Toc";
 
   if (typeof define === "function" && define.amd) {
     define([], factory(pluginName));
@@ -12,13 +12,36 @@
   "use strict";
 
   var defaults = {
-    pageSelector: "main",
-    headersSelector: "h1, h2, h3, h4, h5, h6",
-    tocElement: "#toc",
+    enableHeadingsAnchor: true,
+    enableHeadingsObserver: true,
+    selectors: {
+      contentSelector: "main",
+      headersSelector: "h1, h2, h3, h4, h5, h6",
+      tocSelector: "#toc",
+    },
+    observerOptions: {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.5,
+    },
+    tocClasses: {
+      ol: "toc__list",
+      li: "toc__list-section",
+      a: "toc-link",
+      isVisible: "is-visible",
+      isActive: "is-active",
+      anchor: "heading-anchor",
+    },
+    content: {
+      anchorContent: "#",
+      linkTo: "Link to section :",
+      goTo: "Go to section :",
+    },
+    afterLoad: function (headings) {},
   };
 
   /**
-   * Fusionner les options
+   * Combine plugin's options
    * @param {Object} defaults Default settings
    * @param {Object} options User options
    */
@@ -39,7 +62,7 @@
   };
 
   /**
-   * L'object du plugin
+   * Starts the plugin
    * @param {Object} options User options
    * @constructor
    */
@@ -105,63 +128,25 @@
   }
 
   /**
-   * Les prototypes du plugin
+   * Plugin prototype
    * @public
    * @constructor
    */
   Plugin.prototype = {
     init: function () {
-      this.PAGE = document.querySelector(this.options.pageSelector);
-      this.HEADINGS = this.PAGE.querySelectorAll(this.options.headersSelector);
-      this.TOC_ELEMENT = document.querySelector(this.options.tocElement);
+      this.PAGE = document.querySelector(this.options.selectors.contentSelector);
+      this.HEADINGS = this.PAGE.querySelectorAll(this.options.selectors.headersSelector);
+      this.TOC_ELEMENT = document.querySelector(this.options.selectors.tocSelector);
 
       // Set the TOC
       this.setHeadingsAnchor();
       this.generateTocHTML(this.HEADINGS);
 
-      this.TOC_LINKS = this.TOC_ELEMENT.querySelectorAll(".toc-link");
+      this.TOC_LINKS = this.TOC_ELEMENT.querySelectorAll(`.${this.options.tocClasses.link}`);
 
-      // Headings observer
+      // Headings observer if enabled
+      if (!this.options.enableHeadingsObserver) return;
       this.headingsObserver();
-    },
-
-    /**
-     * Make a reactive TOC with observer API
-     */
-    headingsObserver: function () {
-      // Observer actions
-      const handleObserver = (entries) => {
-        entries.forEach((entry) => {
-          // Select the toc's link of the entry witch matching id
-          const link = document.querySelector(`a[href="#${entry.target.id}"]`);
-
-          // Add class when entry is visible in the viewport
-          if (entry.isIntersecting) {
-            link.classList.add("is-visible");
-          } else {
-            link.classList.remove("is-visible");
-            link.classList.remove("is-active");
-          }
-        });
-
-        // Set a active class to the first visible link
-        const visibleLinks = document.querySelectorAll(".is-visible");
-        visibleLinks.forEach((link) => link.classList.remove("is-active"));
-        if (visibleLinks.length > 0) {
-          visibleLinks[0].classList.add("is-active");
-        }
-      };
-
-      const options = {
-        root: null,
-        rootMargin: "0px",
-        threshold: 0.5,
-      };
-
-      const observer = new IntersectionObserver(handleObserver, options);
-
-      // Observer on each headings
-      this.HEADINGS.forEach((heading) => observer.observe(heading));
     },
 
     /**
@@ -174,17 +159,19 @@
         let idContent = slugify(title);
         heading.setAttribute("id", idContent);
 
-        // Create a anchor for the heading
+        // Create a anchor for the heading if enabled
+        if (!this.options.enableHeadingsAnchor) return;
+
         const anchor = createElement({
           type: "a",
           attributes: {
             href: `#${idContent}`,
-            class: "heading-anchor",
-            title: `Link to the section : ${title}`,
-            "aria-label": `Link to the section : ${title}`,
+            class: `${this.options.tocClasses.anchor}`,
+            title: `${this.options.content.linkTo} ${title}`,
+            "aria-label": `${this.options.content.linkTo} ${title}`,
           },
           parent: heading,
-          content: "#",
+          content: `${this.options.content.anchorContent}`,
         });
       });
     },
@@ -198,7 +185,7 @@
 
       const list = createElement({
         type: "ol",
-        attributes: { class: `toc__list` },
+        attributes: { class: `${this.options.tocClasses.list}` },
         parent: this.TOC_ELEMENT,
       });
 
@@ -215,8 +202,8 @@
         const li = createElement({
           type: "li",
           attributes: {
-            class: `toc__list-section`,
-            "data-section": level,
+            class: `${this.options.tocClasses.li}`,
+            "data-level": level,
           },
         });
 
@@ -225,9 +212,9 @@
           type: "a",
           attributes: {
             href: "#" + slugify(title),
-            class: "toc-link",
-            title: `Go to section : ${title}`,
-            "aria-label": `Go to section : ${title}`,
+            class: `${this.options.tocClasses.a}`,
+            title: `${this.options.content.goTo} ${title}`,
+            "aria-label": `${this.options.content.goTo} ${title}`,
           },
           parent: li,
           content: title,
@@ -237,7 +224,7 @@
         if (level > currentLevel) {
           const newList = createElement({
             type: "ol",
-            attributes: { class: `toc__subList` },
+            attributes: { class: `${this.options.tocClasses.list}` },
             parent: lastLi,
           });
 
@@ -263,6 +250,47 @@
         lastLi = li;
         currentLevel = level;
       });
+
+      this.options.afterLoad(headings);
+    },
+
+    /**
+     * Make a reactive TOC with observer API
+     */
+    headingsObserver: function () {
+      // Observer actions
+      const handleObserver = (entries) => {
+        entries.forEach((entry) => {
+          // Select the toc's link of the entry witch matching id
+          const link = document.querySelector(`a[href="#${entry.target.id}"]`);
+
+          // Add class when entry is visible in the viewport
+          if (entry.isIntersecting) {
+            link.classList.add(`${this.options.tocClasses.isVisible}`);
+          } else {
+            link.classList.remove(`${this.options.tocClasses.isVisible}`);
+            link.classList.remove(`${this.options.tocClasses.isActive}`);
+          }
+        });
+
+        // Set a active class to the first visible link
+        const visibleLinks = document.querySelectorAll(`.${this.options.tocClasses.isVisible}`);
+        visibleLinks.forEach((link) => link.classList.remove(`${this.options.tocClasses.isActive}`));
+        if (visibleLinks.length > 0) {
+          visibleLinks[0].classList.add(`${this.options.tocClasses.isActive}`);
+        }
+      };
+
+      const options = {
+        root: this.options.observerOptions.root,
+        rootMargin: this.options.observerOptions.rootMargin,
+        threshold: this.options.observerOptions.threshold,
+      };
+
+      const observer = new IntersectionObserver(handleObserver, options);
+
+      // Observer on each headings
+      this.HEADINGS.forEach((heading) => observer.observe(heading));
     },
   };
   return Plugin;
