@@ -134,13 +134,17 @@
    */
   Plugin.prototype = {
     init: function () {
-      this.PAGE = document.querySelector(this.options.selectors.contentSelector);
-      this.HEADINGS = this.PAGE.querySelectorAll(this.options.selectors.headersSelector);
       this.TOC_ELEMENT = document.querySelector(this.options.selectors.tocSelector);
 
+      // If no TOC container, abort
+      if (!this.TOC_ELEMENT) return;
+
+      this.PAGE = document.querySelector(this.options.selectors.contentSelector);
+      this.HEADINGS = this.PAGE.querySelectorAll(this.options.selectors.headersSelector);
+
       // Set the TOC
-      this.setHeadingsAnchor();
       this.generateTocHTML(this.HEADINGS);
+      this.setHeadingsAnchor();
 
       this.TOC_LINKS = this.TOC_ELEMENT.querySelectorAll(`.${this.options.tocClasses.link}`);
 
