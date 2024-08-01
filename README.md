@@ -1,4 +1,4 @@
-# **Table of Contents Generator**
+# **TOC-it**
 
 A simple plugin to generate a table of contents for a page!
 
@@ -16,7 +16,7 @@ Features:
 Add the following to your HTML file, before the `</body>` tag:
 
 ```html
-<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/Kim-Bnx/table-of-contents@main/app.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/Kim-Bnx/TOC-it@main/TOCit.js"></script>
 ```
 
 
