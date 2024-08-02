@@ -1,5 +1,4 @@
-(function (root, factory) {
-  var pluginName = "TOCit";
+(function (root, factory) {  var pluginName = "TOCit";
 
   if (typeof define === "function" && define.amd) {
     define([], factory(pluginName));
@@ -46,19 +45,22 @@
    * @param {Object} options User options
    */
   var extend = function (target, options) {
-    var prop,
-      extended = {};
-    for (prop in defaults) {
-      if (Object.prototype.hasOwnProperty.call(defaults, prop)) {
-        extended[prop] = defaults[prop];
+    var extended = {};
+
+    var merge = function (obj1, obj2) {
+      for (var prop in obj1) {
+        if (Object.prototype.hasOwnProperty.call(obj1, prop)) {
+          if (typeof obj1[prop] === "object" && obj1[prop] !== null && !Array.isArray(obj1[prop])) {
+            extended[prop] = merge(obj1[prop], obj2[prop] || {});
+          } else {
+            extended[prop] = obj2 && obj2[prop] !== undefined ? obj2[prop] : obj1[prop];
+          }
+        }
       }
-    }
-    for (prop in options) {
-      if (Object.prototype.hasOwnProperty.call(options, prop)) {
-        extended[prop] = options[prop];
-      }
-    }
-    return extended;
+      return extended;
+    };
+
+    return merge(target, options);
   };
 
   /**
@@ -146,7 +148,7 @@
       this.generateTocHTML(this.HEADINGS);
       this.setHeadingsAnchor();
 
-      this.TOC_LINKS = this.TOC_ELEMENT.querySelectorAll(`.${this.options.tocClasses.link}`);
+      this.TOC_LINKS = this.TOC_ELEMENT ? this.TOC_ELEMENT.querySelectorAll(`.${this.options.tocClasses.link}`) : null;
 
       // Headings observer if enabled
       if (!this.options.enableHeadingsObserver) return;
