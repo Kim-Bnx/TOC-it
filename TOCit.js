@@ -1,5 +1,4 @@
 (function (root, factory) {  var pluginName = "TOCit";
-
   if (typeof define === "function" && define.amd) {
     define([], factory(pluginName));
   } else if (typeof exports === "object") {
@@ -96,6 +95,23 @@
   }
 
   /**
+   * Get an element or throw an error if it doesn't exist
+   * @param {string} selector element selector
+   * @param {string} errorMessage if there is no element found
+   * @returns element node
+   */
+  function elementSelector(selector, errorMessage = "") {
+    const el = document.querySelector(selector);
+
+    if (!el) {
+      console.error(errorMessage);
+      return;
+    }
+
+    return el;
+  }
+
+  /**
    * https://jasonwatmore.com/vanilla-js-slugify-a-string-in-javascript
    * @param {string} input
    * @returns {string} slugify input
@@ -126,6 +142,10 @@
   function getTextElement(element) {
     const childs = Array.from(element.childNodes);
     const text = childs.find((child) => child.nodeName == "#text");
+    if (!text) {
+      console.error(`One ${element.tagName} heading appears to be an empty title.`);
+      return;
+    }
     return text.nodeValue;
   }
 
@@ -135,18 +155,24 @@
    * @constructor
    */
   Plugin.prototype = {
-    init: function () {
-      this.TOC_ELEMENT = document.querySelector(this.options.selectors.tocSelector);
-
-      // If no TOC container, abort
+    init() {
+      this.TOC_ELEMENT = elementSelector(
+        this.options.selectors.tocSelector,
+        `There is no ${this.options.selectors.tocSelector} element found to generate the TOC (see selectors plugin options).`
+      );
       if (!this.TOC_ELEMENT) return;
 
-      this.PAGE = document.querySelector(this.options.selectors.contentSelector);
+      this.PAGE = elementSelector(
+        this.options.selectors.contentSelector,
+        `The ${this.options.selectors.contentSelector} element wasn't found (see selectors plugin options).`
+      );
+      if (!this.PAGE) return;
+
       this.HEADINGS = this.PAGE.querySelectorAll(this.options.selectors.headersSelector);
 
       // Set the TOC
       this.generateTocHTML(this.HEADINGS);
-      this.setHeadingsAnchor();
+      this.setHeadingsAnchor(this.HEADINGS);
 
       this.TOC_LINKS = this.TOC_ELEMENT ? this.TOC_ELEMENT.querySelectorAll(`.${this.options.tocClasses.link}`) : null;
 
@@ -158,9 +184,10 @@
     /**
      * Set ID and a link anchor to each headings
      */
-    setHeadingsAnchor: function () {
-      this.HEADINGS.forEach((heading) => {
+    setHeadingsAnchor(headings) {
+      headings.forEach((heading) => {
         const title = getTextElement(heading);
+        if (!title) return;
         // Set the id attribute to the heading
         let idContent = slugify(title);
         heading.setAttribute("id", idContent);
@@ -186,8 +213,13 @@
      * Generate the table of contents based on the headings in the page
      * @param {array} headings list of headings
      */
-    generateTocHTML: function (headings) {
-      let currentLevel = 1;
+    generateTocHTML(headings) {
+      const startLevel = Number(headings[0].tagName.substr(1));
+
+      // Check the order of the headings before generating
+      if (!this.checkHeadingOrder(headings)) return;
+
+      let currentLevel = startLevel;
 
       const list = createElement({
         type: "ol",
@@ -198,11 +230,12 @@
       let lastLi = null;
       let lastList = list;
 
-      this.HEADINGS.forEach((heading) => {
+      headings.forEach((heading) => {
         // Heading level from its tag
         const level = Number(heading.tagName.substr(1));
         // Heading text
         const title = getTextElement(heading);
+        if (!title) return;
 
         // Create the list item
         const li = createElement({
@@ -237,6 +270,7 @@
           newList.appendChild(li);
           lastList = newList;
         }
+
         // Continue previous list
         else if (level < currentLevel) {
           let currentList = lastList;
@@ -261,14 +295,53 @@
     },
 
     /**
+     * Check the correct order of the page headings
+     * @param {array} headings
+     * @returns {boolean} whether the order is correct or not
+     */
+    checkHeadingOrder(headings) {
+      // Use as reference to set the highest heading
+      const startLevel = Number(headings[0].tagName.substr(1));
+
+      // New array with only heading level humber
+      let headingsLevel = [];
+      headings.forEach((h) => {
+        const headLvl = Number(h.tagName.substr(1));
+        headingsLevel.push(headLvl);
+      });
+
+      let level = startLevel;
+
+      // Order conditions
+      for (let i = 0; i < headingsLevel.length; i++) {
+        const h = headingsLevel[i];
+        switch (true) {
+          case h === startLevel:
+            level = h;
+            break;
+          case h === level + 1:
+          case h < level && h > startLevel:
+          case h === level:
+            level = h;
+            break;
+          default:
+            console.error("Problem with order at heading: " + headings[i].textContent);
+            return false;
+        }
+      }
+      return true;
+    },
+
+    /**
      * Make a reactive TOC with observer API
      */
-    headingsObserver: function () {
+    headingsObserver() {
       // Observer actions
       const handleObserver = (entries) => {
         entries.forEach((entry) => {
           // Select the toc's link of the entry witch matching id
           const link = document.querySelector(`a[href="#${entry.target.id}"]`);
+          if (!link) return;
 
           // Add class when entry is visible in the viewport
           if (entry.isIntersecting) {
