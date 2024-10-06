@@ -2,7 +2,7 @@
 
 A simple plugin to generate a table of contents for a page!
 
-### ➡️ [Checkout the demo]()
+(Demo coming soon!)
 
 Features: 
 - Generates a table of contents (TOC) that contains ordered lists of all the page heading elements
@@ -32,10 +32,10 @@ First, you need to plan where your table of contents will be located and create 
 Then you can initialize the plugin with a new instance, like so:
 
 ```javascript
-new Toc()
+new TOCit()
 
 // With options 
-new Toc({
+new TOCit({
     selectors: {
         tocSelector: "#toc",
     }
@@ -46,7 +46,7 @@ You can also directly initialize it in your HTML file:
 
 ```html
 <script>
-    new Toc()
+    new TOCit()
 </script>
 ```
 
@@ -56,7 +56,7 @@ You can also directly initialize it in your HTML file:
 Here are the default options of the plugin:
 
 ```javascript
-new Toc({
+new TOCit({
     enableHeadingsAnchor: true,
     enableHeadingsObserver: true,
     selectors: {
@@ -89,7 +89,7 @@ new Toc({
 ### Features options
 
 ```javascript	
-new Toc({
+new TOCit({
     enableHeadingsAnchor: true,
     enableHeadingsObserver: true,
 })
@@ -100,7 +100,7 @@ new Toc({
 
 ### Selectors
 ```javascript	
-new Toc({
+new TOCit({
     selectors: {
         contentSelector: "body",
         headersSelector: "h1, h2, h3, h4, h5, h6",
@@ -115,7 +115,7 @@ new Toc({
 
 ### Observers options
 ```javascript	
-new Toc({
+new TOCit({
     observerOptions: {
         root: null,
         rootMargin: "0px", 
@@ -132,7 +132,7 @@ If the heading observer is enabled, here are its options based on the Intersecti
 ### Custom classes
 
 ```javascript
-new Toc({
+new TOCit({
     tocClasses: {
         ol: "toc__list",
         li: "toc__list-section",
@@ -154,7 +154,7 @@ TOC's element class name
 ### Generated content
 
 ```javascript
-new Toc({
+new TOCit({
     content: {
         anchorContent: "#",
         linkTo: "Link to section :",
@@ -169,7 +169,7 @@ new Toc({
 ### afterLoad
 
 ```javascript
-new Toc({
+new TOCit({
     afterLoad: function (headings) { },
 })
 ```
